@@ -7,7 +7,7 @@ module.exports = function(grunt) {
 		banner:
 						'/*! Respond.js v<%= pkg.version %>: <%= pkg.description %>\n' +
 						' * Copyright <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>\n' +
-						' * Licensed under <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' + 
+						' * Licensed under <%= _.pluck(pkg.licenses, "type").join(", ") %>\n' +
 						' * <%= pkg.homepageShortened %>' +
 						' */\n\n',
 		uglify: {
@@ -78,7 +78,8 @@ module.exports = function(grunt) {
 			},
 			globals: {
 				Image: true,
-				window: true
+				window: true,
+                XDomainRequest: true
 			}
 		}
 	});

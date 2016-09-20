@@ -1,5 +1,5 @@
 /*! Respond.js v1.4.2: min/max-width media query polyfill
- * Copyright 2014 Scott Jehl
+ * Copyright 2016 Scott Jehl
  * Licensed under MIT
  * http://j.mp/respondjs */
 
@@ -57,6 +57,17 @@
       return;
     }
     req.send(null);
+  }, xdomainReq = function(url, callback) {
+    if (!w.XDomainRequest) {
+      console.error("browser not support XDomainRequest");
+      return;
+    }
+    var xdr = new XDomainRequest();
+    xdr.open("GET", url);
+    xdr.onload = function() {
+      callback(xdr.responseText);
+    };
+    xdr.send();
   }, isUnsupportedMediaQuery = function(query) {
     return query.replace(respond.regex.minmaxwh, "").match(respond.regex.other);
   };
@@ -193,7 +204,8 @@
   }, makeRequests = function() {
     if (requestQueue.length) {
       var thisRequest = requestQueue.shift();
-      ajax(thisRequest.href, function(styles) {
+      var reqFun = thisRequest.sameDomain ? ajax : xdomainReq;
+      reqFun(thisRequest.href, function(styles) {
         translate(styles, thisRequest.href, thisRequest.media);
         parsedSheets[thisRequest.href] = true;
         w.setTimeout(function() {
@@ -209,15 +221,16 @@
           translate(sheet.styleSheet.rawCssText, href, media);
           parsedSheets[href] = true;
         } else {
-          if (!/^([a-zA-Z:]*\/\/)/.test(href) && !base || href.replace(RegExp.$1, "").split("/")[0] === w.location.host) {
-            if (href.substring(0, 2) === "//") {
-              href = w.location.protocol + href;
-            }
-            requestQueue.push({
-              href: href,
-              media: media
-            });
+          if (href.substring(0, 2) === "//") {
+            href = w.location.protocol + href;
           }
+          var isOuterLink = /^([a-zA-Z:]*\/\/)/.test(href);
+          var sameDomain = href.replace(RegExp.$1, "").split("/")[0] === w.location.host;
+          requestQueue.push({
+            sameDomain: sameDomain,
+            href: href,
+            media: media
+          });
         }
       }
     }

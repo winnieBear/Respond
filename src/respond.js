@@ -43,6 +43,22 @@
 			}
 			req.send( null );
 		},
+
+        //ie8- 使用XDomainRequest进行跨域请求,需要css的服务器配置CORS响应头,同时只支持http请求
+        //https://blogs.msdn.microsoft.com/ieinternals/2010/05/13/xdomainrequest-restrictions-limitations-and-workarounds/
+        xdomainReq = function(url, callback ) {
+            if(!w.XDomainRequest){
+                console.error('browser not support XDomainRequest' );
+                return;
+            }
+            var xdr = new XDomainRequest();
+            xdr.open('GET', url );
+            xdr.onload = function() {
+                callback(xdr.responseText);
+            };
+            xdr.send();
+        },
+
 		isUnsupportedMediaQuery = function( query ) {
 			return query.replace( respond.regex.minmaxwh, '' ).match( respond.regex.other );
 		};
@@ -286,8 +302,10 @@
 		makeRequests = function(){
 			if( requestQueue.length ){
 				var thisRequest = requestQueue.shift();
-
-				ajax( thisRequest.href, function( styles ){
+                //如果是同域采用ajax请求,跨域时使用xdomainReq进行请求
+                var reqFun = thisRequest.sameDomain ? ajax : xdomainReq;
+                reqFun(thisRequest.href, function(styles) {
+				//ajax( thisRequest.href, function( styles ){
 					translate( styles, thisRequest.href, thisRequest.media );
 					parsedSheets[ thisRequest.href ] = true;
 
@@ -314,16 +332,20 @@
 						translate( sheet.styleSheet.rawCssText, href, media );
 						parsedSheets[ href ] = true;
 					} else {
-						if( (!/^([a-zA-Z:]*\/\/)/.test( href ) && !base) ||
-							href.replace( RegExp.$1, "" ).split( "/" )[0] === w.location.host ){
+                        //不是全路径的外联css && 不存在base设置 || css跟当前html是同域
+						/*if( (!/^([a-zA-Z:]*\/\/)/.test( href ) && !base) ||
+							href.replace( RegExp.$1, "" ).split( "/" )[0] === w.location.host ){*/
 							// IE7 doesn't handle urls that start with '//' for ajax request
 							// manually add in the protocol
 							if ( href.substring(0,2) === "//" ) { href = w.location.protocol + href; }
+                            var isOuterLink = /^([a-zA-Z:]*\/\/)/.test( href );
+                            var sameDomain = href.replace(RegExp.$1, "").split("/")[0] === w.location.host;
 							requestQueue.push( {
+                                sameDomain: sameDomain,
 								href: href,
 								media: media
 							} );
-						}
+						//}
 					}
 				}
 			}
