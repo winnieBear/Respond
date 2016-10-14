@@ -1,3 +1,6 @@
+# 修改
+把跨域请求修改为通过CORS方案来进行。
+-----
 # Respond.js
 ### A fast & lightweight polyfill for min/max-width CSS3 Media Queries (for IE 6-8, and more)
 
